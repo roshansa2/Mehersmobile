@@ -1,0 +1,113 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Meher’s Mobile – Billing & Attendance</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f5;--card:#fff;--ink:#0f1a2e;--mut:#5d6b82;--line:#dbe1ea;--ac:#1f4fe0;--acink:#fff;--ok:#12805c;--warn:#b45309;--bad:#c0262d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c121d;--card:#151d2c;--ink:#e8edf6;--mut:#93a0b8;--line:#263249;--ac:#6b8cff;--acink:#0c121d;--ok:#3fd29f;--warn:#f0a63a;--bad:#ff7a80}}
+:root[data-theme="dark"]{--bg:#0c121d;--card:#151d2c;--ink:#e8edf6;--mut:#93a0b8;--line:#263249;--ac:#6b8cff;--acink:#0c121d;--ok:#3fd29f;--warn:#f0a63a;--bad:#ff7a80}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 Sora,system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:84px}
+header{padding:16px 16px 4px;max-width:760px;margin:auto}header h1{font-size:20px;margin:0}header p{margin:2px 0 0;color:var(--mut);font-size:13px}
+main{max-width:760px;margin:auto;padding:8px 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+h3{margin:0 0 8px;font-size:15px}.mut{color:var(--mut);font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid .card{margin:0}
+.big{font-size:24px;font-weight:700}
+.row{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line)}.row:first-of-type{border-top:0}
+.row>.g{flex:1;min-width:0}.row b{font-weight:600}
+input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;margin:4px 0}
+.btn{background:var(--ac);color:var(--acink);border:0;border-radius:10px;padding:9px 14px;font:600 14px Sora,system-ui,sans-serif;cursor:pointer}
+.btn.s{background:transparent;color:var(--ac);border:1px solid var(--ac)}.btn.sm{padding:6px 10px;font-size:13px}.btn:disabled{opacity:.4}
+.chip{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--mut);white-space:nowrap}
+.ok{color:var(--ok);border-color:var(--ok)}.warn{color:var(--warn);border-color:var(--warn)}.bad{color:var(--bad);border-color:var(--bad)}
+.plist{max-height:240px;overflow:auto;margin-top:6px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tot div{display:flex;justify-content:space-between;padding:2px 0}.tot .t{font-size:18px;font-weight:700;border-top:1px solid var(--line);margin-top:4px;padding-top:6px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:5}
+nav button{flex:1;background:none;border:0;color:var(--mut);font:600 12px Sora,system-ui,sans-serif;padding:10px 2px;cursor:pointer;border-radius:10px}nav button.on{color:var(--ac);background:var(--bg)}
+#mod{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;overflow:auto;padding:16px;z-index:9}
+.sheet{background:#fff;color:#111;max-width:480px;margin:auto;border-radius:12px;padding:18px;font-size:13px}
+.sheet table{width:100%;border-collapse:collapse}.sheet td,.sheet th{padding:4px 2px;text-align:left;border-bottom:1px solid #ddd;vertical-align:top}.sheet .r{text-align:right}
+#toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:99px;font-size:13px;display:none;z-index:10}
+@media print{body>*:not(#mod){display:none!important}#mod{position:static;background:none;padding:0}.np{display:none!important}}
+</style></head><body>
+<header><h1>Meher’s Mobile</h1><p id="dt"></p></header>
+<main id="app"></main>
+<nav id="nav"></nav><div id="mod"></div><div id="toast"></div>
+<script>
+const K="meher-demo-v1",$=s=>document.querySelector(s);
+const inr=n=>"₹"+Math.round(n).toLocaleString("en-IN");
+const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const mm=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
+const rimei=()=>"35"+String(Math.floor(Math.random()*1e13)).padStart(13,"0");
+function tot(items,disc){const sub=items.reduce((a,i)=>a+i.p*i.q,0),t=Math.max(0,sub-disc),tx=t/1.18,g=t-tx;return{sub,t,tx,g}}
+function seed(){
+ const P=[["Redmi Note 13 5G",17999,12,1],["Samsung Galaxy A35",27999,8,1],["OnePlus Nord CE4",24999,6,1],["Realme Narzo 70",13999,10,1],["iPhone 15 128GB",62999,3,1],["Vivo T3 5G",19999,7,1],["20W Fast Charger",799,40,0],["USB-C Cable 1m",299,60,0],["Tempered Glass",199,90,0],["Back Case",399,50,0],["Wireless Earbuds",1499,2,0],["Power Bank 10000mAh",1299,15,0]].map((x,i)=>({id:i+1,n:x[0],p:x[1],s:x[2],i:x[3]}));
+ const staff=[[1,"Arjun","Sales",15000],[2,"Priya","Cashier",14000],[3,"Sameer","Technician",18000],[4,"Kavita","Sales",13000]].map(x=>({id:x[0],n:x[1],r:x[2],sal:x[3]}));
+ const att={},n=new Date();
+ for(let d=1;d<n.getDate();d++){const dt=new Date(n.getFullYear(),n.getMonth(),d);if(dt.getDay()==0)continue;att[ymd(dt)]={};staff.forEach(s=>{const h=(d*7+s.id*13)%10;if(h==0)return;att[ymd(dt)][s.id]={in:590+(h*7)%40,out:1230+(h*11)%30}})}
+ const sales=[];
+ for(let k=14;k>=1;k--){const d=new Date();d.setDate(d.getDate()-Math.floor((k-1)/2));d.setHours(11+k%7,(10*k)%60);const a=P[k%6],b=P[6+k%6];
+  const items=[{id:a.id,n:a.n,p:a.p,q:1,im:[rimei()]},{id:b.id,n:b.n,p:b.p,q:1+k%2,im:[]}];
+  sales.push({no:"INV-"+(1000-k+1),ts:d.getTime(),cu:["Rahul Das","Sneha Nayak","Walk-in","Amit Sahu"][k%4],ph:"",pay:["UPI","Cash","Card"][k%3],st:1+k%4,disc:0,items,...tot(items,0)})}
+ sales.reverse();return{P,staff,att,sales,no:1001}}
+let S=load(),tab="home",cart=[],q="",cu={n:"",ph:"",disc:0,pay:"UPI",st:1};
+function load(){try{const r=localStorage.getItem(K);if(r)return JSON.parse(r)}catch(e){}return seed()}
+function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display="none",2200)}
+const prod=id=>S.P.find(x=>x.id==id),staffOf=id=>S.staff.find(x=>x.id==id);
+const todayK=()=>ymd(new Date()),isToday=ts=>ymd(new Date(ts))==todayK();
+const TABS=[["home","Home"],["bill","Billing"],["stock","Stock"],["staff","Attendance"],["rep","Reports"]];
+function go(t){tab=t;draw()}
+function draw(){
+ $("#dt").textContent=new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+ $("#nav").innerHTML=TABS.map(t=>`<button class="${t[0]==tab?"on":""}" onclick="go('${t[0]}')">${t[1]}</button>`).join("");
+ $("#app").innerHTML=V[tab]();if(tab=="bill"){listP();drawCart()}window.scrollTo(0,0)}
+const V={
+home(){const ts=S.sales.filter(s=>isToday(s.ts)),sum=ts.reduce((a,s)=>a+s.t,0),low=S.P.filter(p=>p.s<=3),pr=Object.keys(S.att[todayK()]||{}).length;
+ return `<div class="grid"><div class="card"><div class="mut">Sales today</div><div class="big">${inr(sum)}</div></div><div class="card"><div class="mut">Bills today</div><div class="big">${ts.length}</div></div><div class="card"><div class="mut">Low stock items</div><div class="big">${low.length}</div></div><div class="card"><div class="mut">Staff in shop</div><div class="big">${pr}/${S.staff.length}</div></div></div>
+ <div class="card"><button class="btn" onclick="go('bill')">Start new bill</button> <button class="btn s" onclick="go('staff')">Mark attendance</button></div>
+ <div class="card"><h3>Running low</h3>${low.map(p=>`<div class="row"><div class="g">${esc(p.n)}</div><span class="chip warn">${p.s} left</span></div>`).join("")||'<div class="mut">All items are well stocked.</div>'}</div>
+ <div class="card"><h3>Recent bills</h3>${S.sales.slice(0,5).map(billRow).join("")}</div>
+ <div class="card"><button class="btn s sm" onclick="if(confirm('Reset all demo data?')){S=seed();save();cart=[];draw()}">Reset demo data</button></div>`},
+bill(){return `<div class="card"><h3>Add items</h3><input id="sq" placeholder="Search phone, charger, case…" value="${esc(q)}" oninput="q=this.value;listP()"><div id="pl" class="plist"></div></div><div class="card"><h3>Current bill</h3><div id="cart"></div></div>`},
+stock(){return `<div class="card"><h3>Add a product</h3><input id="an" placeholder="Product name"><div class="two"><input id="ap" type="number" placeholder="Price incl. GST (₹)"><input id="as" type="number" placeholder="Opening stock"></div><label class="mut"><input type="checkbox" id="ai" style="width:auto"> Phone (needs IMEI on bill)</label><div><button class="btn" onclick="addProd()">Save product</button></div></div>
+ <div class="card"><h3>Stock (${S.P.length} items)</h3>${S.P.map(p=>`<div class="row"><div class="g"><b>${esc(p.n)}</b><div class="mut">${inr(p.p)}${p.i?" · IMEI tracked":""}</div></div><span class="chip ${p.s<=3?"bad":p.s<=8?"warn":"ok"}">${p.s} in stock</span><button class="btn s sm" onclick="restock(${p.id},5)">+5</button></div>`).join("")}</div>`},
+staff(){const k=todayK(),A=S.att[k]||{};
+ return `<div class="card"><h3>Today’s attendance</h3><label class="mut"><input type="checkbox" id="geo" checked style="width:auto"> Phone is inside the shop (simulated location check)</label>${S.staff.map(s=>{const a=A[s.id];return `<div class="row"><div class="g"><b>${s.n}</b><div class="mut">${s.r}${a?" · in "+mm(a.in)+(a.out?" · out "+mm(a.out):""):""}</div></div>${a?(a.in>615?'<span class="chip warn">Late</span>':'<span class="chip ok">On time</span>'):'<span class="chip">Not in</span>'}${!a?`<button class="btn sm" onclick="clock(${s.id},'in')">Check in</button>`:!a.out?`<button class="btn s sm" onclick="clock(${s.id},'out')">Check out</button>`:""}</div>`}).join("")}<div class="mut" style="margin-top:6px">Late means after 10:15.</div></div>
+ <div class="card"><h3>This month</h3>${S.staff.map(s=>{const m=mstat(s);return `<div class="row"><div class="g"><b>${s.n}</b><div class="mut">${m.p} present, ${m.l} late, ${m.a} absent</div></div><div><b>${inr(m.pay)}</b><div class="mut">of ${inr(s.sal)}</div></div></div>`}).join("")}<div class="mut" style="margin-top:6px">Pay = salary ÷ 26 × days present.</div></div>`},
+rep(){const m=new Date().getMonth(),ms=S.sales.filter(s=>new Date(s.ts).getMonth()==m),sum=ms.reduce((a,s)=>a+s.t,0),g=ms.reduce((a,s)=>a+s.g,0),by={},tp={};
+ ms.forEach(s=>{by[s.st]=(by[s.st]||0)+s.t;s.items.forEach(i=>tp[i.n]=(tp[i.n]||0)+i.q)});
+ return `<div class="grid"><div class="card"><div class="mut">Sales this month</div><div class="big">${inr(sum)}</div></div><div class="card"><div class="mut">GST collected</div><div class="big">${inr(g)}</div></div></div>
+ <div class="card"><h3>Sales by staff</h3>${Object.keys(by).map(k=>`<div class="row"><div class="g">${staffOf(k).n}</div><b>${inr(by[k])}</b></div>`).join("")||'<div class="mut">No sales yet.</div>'}</div>
+ <div class="card"><h3>Top items</h3>${Object.entries(tp).sort((a,b)=>b[1]-a[1]).slice(0,5).map(e=>`<div class="row"><div class="g">${esc(e[0])}</div><span class="chip">${e[1]} sold</span></div>`).join("")}</div>
+ <div class="card"><h3>All bills</h3>${S.sales.map(billRow).join("")}</div>`}};
+function billRow(s){return `<div class="row" onclick="showInv('${s.no}')" style="cursor:pointer"><div class="g"><b>${s.no}</b><div class="mut">${esc(s.cu||"Walk-in")}, ${new Date(s.ts).toLocaleDateString("en-IN",{day:"numeric",month:"short"})}, ${s.pay}</div></div><b>${inr(s.t)}</b></div>`}
+function mstat(s){const n=new Date();let p=0,l=0,w=0;for(let d=1;d<=n.getDate();d++){const dt=new Date(n.getFullYear(),n.getMonth(),d);if(dt.getDay()==0)continue;const a=(S.att[ymd(dt)]||{})[s.id];if(a){p++;w++;if(a.in>615)l++}else if(d<n.getDate())w++}return{p,l,a:w-p,pay:s.sal/26*p}}
+function clock(id,t){if(t=="in"&&!$("#geo").checked)return toast("Move inside the shop to check in");const k=todayK(),n=new Date(),m=n.getHours()*60+n.getMinutes();S.att[k]=S.att[k]||{};if(t=="in")S.att[k][id]={in:m};else S.att[k][id].out=m;save();draw();toast(staffOf(id).n+(t=="in"?" checked in":" checked out"))}
+function addProd(){const n=$("#an").value.trim(),p=+$("#ap").value,s=+$("#as").value;if(!n||!p)return toast("Enter a name and price");S.P.push({id:Date.now(),n,p,s:s||0,i:$("#ai").checked?1:0});save();draw();toast("Product saved")}
+function restock(id,n){prod(id).s+=n;save();draw()}
+function listP(){const t=q.toLowerCase();$("#pl").innerHTML=S.P.filter(p=>p.n.toLowerCase().includes(t)).map(p=>`<div class="row"><div class="g"><b>${esc(p.n)}</b><div class="mut">${inr(p.p)}, ${p.s} in stock</div></div><button class="btn sm" ${p.s?"":"disabled"} onclick="addItem(${p.id})">Add</button></div>`).join("")||'<div class="mut">No match. Add it under Stock.</div>'}
+function addItem(id){const p=prod(id),c=cart.find(x=>x.id==id);if(c){if(c.q>=p.s)return toast("Only "+p.s+" in stock");c.q++}else cart.push({id,q:1,im:[]});drawCart()}
+function qty(id,d){const c=cart.find(x=>x.id==id);c.q+=d;if(c.q<=0)cart=cart.filter(x=>x!=c);else if(c.q>prod(id).s){c.q--;toast("No more stock")}drawCart()}
+function upd(){const it=cart.map(c=>({p:prod(c.id).p,q:c.q})),t=tot(it,+cu.disc||0);$("#tot").innerHTML=`<div><span>Subtotal</span><span>${inr(t.sub)}</span></div><div><span>Discount</span><span>−${inr(+cu.disc||0)}</span></div><div><span>GST included (18%)</span><span>${inr(t.g)}</span></div><div class="t"><span>Total</span><span>${inr(t.t)}</span></div>`}
+function drawCart(){const el=$("#cart");if(!el)return;if(!cart.length){el.innerHTML='<div class="mut">Tap Add on an item above to start a bill.</div>';return}
+ el.innerHTML=cart.map(c=>{const p=prod(c.id);return `<div class="row" style="align-items:flex-start"><div class="g"><b>${esc(p.n)}</b><div class="mut">${inr(p.p)} each</div>${p.i?Array.from({length:c.q},(_,j)=>`<input inputmode="numeric" maxlength="15" placeholder="IMEI ${j+1} (15 digits)" value="${c.im[j]||""}" oninput="prodIm(${c.id},${j},this.value)">`).join(""):""}</div><button class="btn s sm" onclick="qty(${c.id},-1)">−</button><b>${c.q}</b><button class="btn s sm" onclick="qty(${c.id},1)">+</button></div>`}).join("")+
+ `<button class="btn s sm" onclick="autoIm()">Auto-fill IMEIs (demo)</button>
+ <div class="two" style="margin-top:8px"><input placeholder="Customer name" value="${esc(cu.n)}" oninput="cu.n=this.value"><input placeholder="Mobile number" inputmode="tel" value="${esc(cu.ph)}" oninput="cu.ph=this.value"></div>
+ <div class="two"><input type="number" placeholder="Discount (₹)" value="${cu.disc||""}" oninput="cu.disc=this.value;upd()"><select onchange="cu.pay=this.value">${["UPI","Cash","Card","EMI"].map(x=>`<option ${x==cu.pay?"selected":""}>${x}</option>`).join("")}</select></div>
+ <select onchange="cu.st=+this.value">${S.staff.map(s=>`<option value="${s.id}" ${s.id==cu.st?"selected":""}>Sold by ${s.n}</option>`).join("")}</select>
+ <div class="tot" id="tot" style="margin:10px 0"></div><button class="btn" onclick="checkout()">Generate invoice</button>`;upd()}
+function prodIm(id,j,v){cart.find(c=>c.id==id).im[j]=v.replace(/\D/g,"")}
+function autoIm(){cart.forEach(c=>{if(prod(c.id).i)for(let j=0;j<c.q;j++)if(!c.im[j]||c.im[j].length!=15)c.im[j]=rimei()});drawCart()}
+function checkout(){for(const c of cart){const p=prod(c.id);if(p.i)for(let j=0;j<c.q;j++)if((c.im[j]||"").length!=15)return toast("Enter all 15-digit IMEIs for "+p.n)}
+ const items=cart.map(c=>{const p=prod(c.id);return{id:p.id,n:p.n,p:p.p,q:c.q,im:p.i?c.im.slice(0,c.q):[]}}),d=+cu.disc||0;
+ const s={no:"INV-"+S.no++,ts:Date.now(),cu:cu.n||"Walk-in",ph:cu.ph,pay:cu.pay,st:cu.st,disc:d,items,...tot(items,d)};
+ items.forEach(i=>prod(i.id).s-=i.q);S.sales.unshift(s);save();cart=[];cu={n:"",ph:"",disc:0,pay:"UPI",st:cu.st};draw();showInv(s.no)}
+function showInv(no){const s=S.sales.find(x=>x.no==no),h=s.t/1.18/2*0.18,tx=s.t/1.18,g=(s.t-tx)/2;
+ $("#mod").style.display="block";$("#mod").innerHTML=`<div class="sheet"><h2 style="margin:0">Meher’s Mobile</h2><div>GSTIN 21ABCDE1234F1Z5 (demo)</div><hr><div><b>Tax invoice ${s.no}</b><br>${new Date(s.ts).toLocaleString("en-IN")}<br>Customer: ${esc(s.cu)} ${esc(s.ph||"")}<br>Billed by ${staffOf(s.st).n}, paid by ${s.pay}</div>
+ <table style="margin-top:8px"><tr><th>Item</th><th class="r">Qty</th><th class="r">Amount</th></tr>${s.items.map(i=>`<tr><td>${esc(i.n)}${i.im.length?'<br><small>IMEI '+i.im.join(", ")+"</small>":""}</td><td class="r">${i.q}</td><td class="r">${inr(i.p*i.q)}</td></tr>`).join("")}</table>
+ <table><tr><td>Taxable value</td><td class="r">${inr(tx)}</td></tr><tr><td>CGST 9%</td><td class="r">${inr(g)}</td></tr><tr><td>SGST 9%</td><td class="r">${inr(g)}</td></tr>${s.disc?`<tr><td>Discount given</td><td class="r">${inr(s.disc)}</td></tr>`:""}<tr><td><b>Total</b></td><td class="r"><b>${inr(s.t)}</b></td></tr></table>
+ <p>Manufacturer warranty applies to phones. Thank you for shopping with us.</p><div class="np"><button class="btn" onclick="print()">Print</button> <a class="btn s" style="text-decoration:none;display:inline-block" target="_blank" href="https://wa.me/${(s.ph||"").replace(/\D/g,"")}?text=${encodeURIComponent("Meher’s Mobile invoice "+s.no+": "+inr(s.t))}">WhatsApp</a> <button class="btn s" onclick="$('#mod').style.display='none'">Close</button></div></div>`}
+draw();
+</script></body></html>
